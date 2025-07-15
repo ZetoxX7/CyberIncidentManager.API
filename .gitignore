@@ -361,3 +361,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Ignore uniquement le fichier de config réel
+/CyberIncidentManager.API/appsettings.json
+
+# Mais garde bien l’exemple (avec la fausse clé) !
+!/CyberIncidentManager.API/appsettings-example.json
