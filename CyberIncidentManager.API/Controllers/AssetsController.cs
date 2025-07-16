@@ -4,6 +4,7 @@ using CyberIncidentManager.API.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Encodings.Web;
 
 namespace CyberIncidentManager.API.Controllers
 {
@@ -35,16 +36,18 @@ namespace CyberIncidentManager.API.Controllers
 
             var asset = new Asset
             {
-                Name = dto.Name,
-                Type = dto.Type,
+                Name = HtmlEncoder.Default.Encode(dto.Name),
+                Type = HtmlEncoder.Default.Encode(dto.Type),
                 IpAddress = dto.IpAddress,
-                Owner = dto.Owner,
-                Location = dto.Location,
+                Owner = HtmlEncoder.Default.Encode(dto.Owner),
+                Location = HtmlEncoder.Default.Encode(dto.Location),
                 Criticality = dto.Criticality
             };
 
             _context.Assets.Add(asset);
             await _context.SaveChangesAsync();
+
+            _logger?.LogInformation("Asset créé : {Name}", asset.Name);
 
             return CreatedAtAction(nameof(GetById), new { id = asset.Id }, asset);
         }
@@ -53,8 +56,13 @@ namespace CyberIncidentManager.API.Controllers
         public async Task<IActionResult> Update(int id, Asset asset)
         {
             if (id != asset.Id) return BadRequest();
+            asset.Name = HtmlEncoder.Default.Encode(asset.Name);
+            asset.Type = HtmlEncoder.Default.Encode(asset.Type);
+            asset.Owner = HtmlEncoder.Default.Encode(asset.Owner);
+            asset.Location = HtmlEncoder.Default.Encode(asset.Location);
             _context.Entry(asset).State = EntityState.Modified;
             await _context.SaveChangesAsync();
+            _logger?.LogInformation("Asset modifié : {Id}", id);
             return NoContent();
         }
 
@@ -65,6 +73,7 @@ namespace CyberIncidentManager.API.Controllers
             if (asset == null) return NotFound();
             _context.Assets.Remove(asset);
             await _context.SaveChangesAsync();
+            _logger?.LogWarning("Asset supprimé : {Id}", id);
             return NoContent();
         }
     }

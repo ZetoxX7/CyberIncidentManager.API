@@ -4,6 +4,7 @@ using CyberIncidentManager.API.Models.DTOs.IncidentType;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Encodings.Web;
 
 namespace CyberIncidentManager.API.Controllers
 {
@@ -37,14 +38,16 @@ namespace CyberIncidentManager.API.Controllers
 
             var type = new IncidentType
             {
-                Name = dto.Name,
-                Description = dto.Description,
+                Name = HtmlEncoder.Default.Encode(dto.Name),
+                Description = HtmlEncoder.Default.Encode(dto.Description),
                 DefaultSeverity = dto.DefaultSeverity,
                 Color = dto.Color
             };
 
             _context.IncidentTypes.Add(type);
             await _context.SaveChangesAsync();
+
+            _logger?.LogInformation("Type d'incident créé : {Name}", type.Name);
 
             return CreatedAtAction(nameof(GetById), new { id = type.Id }, type);
         }
@@ -55,8 +58,11 @@ namespace CyberIncidentManager.API.Controllers
         public async Task<IActionResult> Update(int id, IncidentType type)
         {
             if (id != type.Id) return BadRequest();
+            type.Name = HtmlEncoder.Default.Encode(type.Name);
+            type.Description = HtmlEncoder.Default.Encode(type.Description);
             _context.Entry(type).State = EntityState.Modified;
             await _context.SaveChangesAsync();
+            _logger?.LogInformation("Type d'incident modifié : {Id}", id);
             return NoContent();
         }
 
@@ -69,6 +75,7 @@ namespace CyberIncidentManager.API.Controllers
             if (type == null) return NotFound();
             _context.IncidentTypes.Remove(type);
             await _context.SaveChangesAsync();
+            _logger?.LogWarning("Type d'incident supprimé : {Id}", id);
             return NoContent();
         }
     }

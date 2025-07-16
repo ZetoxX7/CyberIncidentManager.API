@@ -4,6 +4,7 @@ using CyberIncidentManager.API.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Encodings.Web;
 
 namespace CyberIncidentManager.API.Controllers
 {
@@ -41,7 +42,14 @@ namespace CyberIncidentManager.API.Controllers
                 .Include(i => i.AssignedToUser)
                 .FirstOrDefaultAsync(i => i.Id == id);
 
-            return incident == null ? NotFound() : Ok(incident);
+            if (incident == null)
+            {
+                _logger.LogWarning("Consultation d'incident inexistant : {IncidentId}", id);
+                return NotFound();
+            }
+
+            _logger.LogInformation("Consultation de l'incident {IncidentId}", id);
+            return Ok(incident);
         }
 
         // Création d’incidents : Employé, Analyste, Admin
@@ -54,8 +62,8 @@ namespace CyberIncidentManager.API.Controllers
 
             var incident = new Incident
             {
-                Title = dto.Title,
-                Description = dto.Description,
+                Title = HtmlEncoder.Default.Encode(dto.Title),
+                Description = HtmlEncoder.Default.Encode(dto.Description),
                 Severity = dto.Severity,
                 Status = dto.Status,
                 TypeId = dto.TypeId,
@@ -79,8 +87,11 @@ namespace CyberIncidentManager.API.Controllers
         public async Task<IActionResult> Update(int id, Incident incident)
         {
             if (id != incident.Id) return BadRequest();
+            incident.Title = HtmlEncoder.Default.Encode(incident.Title);
+            incident.Description = HtmlEncoder.Default.Encode(incident.Description);
             _context.Entry(incident).State = EntityState.Modified;
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Incident modifié : {IncidentId}", id);
             return NoContent();
         }
 

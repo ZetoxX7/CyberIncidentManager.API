@@ -4,6 +4,7 @@ using CyberIncidentManager.API.Models.DTOs.Role;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Encodings.Web;
 
 namespace CyberIncidentManager.API.Controllers
 {
@@ -35,13 +36,15 @@ namespace CyberIncidentManager.API.Controllers
 
             var role = new Role
             {
-                Name = dto.Name,
-                Description = dto.Description,
+                Name = HtmlEncoder.Default.Encode(dto.Name),
+                Description = HtmlEncoder.Default.Encode(dto.Description),
                 Permissions = dto.Permissions
             };
 
             _context.Roles.Add(role);
             await _context.SaveChangesAsync();
+
+            _logger?.LogInformation("Rôle créé : {Name}", role.Name);
 
             return CreatedAtAction(nameof(GetById), new { id = role.Id }, role);
         }
@@ -50,8 +53,11 @@ namespace CyberIncidentManager.API.Controllers
         public async Task<IActionResult> Update(int id, Role role)
         {
             if (id != role.Id) return BadRequest();
+            role.Name = HtmlEncoder.Default.Encode(role.Name);
+            role.Description = HtmlEncoder.Default.Encode(role.Description);
             _context.Entry(role).State = EntityState.Modified;
             await _context.SaveChangesAsync();
+            _logger?.LogInformation("Rôle modifié : {Id}", id);
             return NoContent();
         }
 
@@ -62,6 +68,7 @@ namespace CyberIncidentManager.API.Controllers
             if (role == null) return NotFound();
             _context.Roles.Remove(role);
             await _context.SaveChangesAsync();
+            _logger?.LogWarning("Rôle supprimé : {Id}", id);
             return NoContent();
         }
     }

@@ -36,7 +36,10 @@ namespace CyberIncidentManager.API.Controllers
                 return BadRequest("Email déjà utilisé.");
 
             if (!IsPasswordStrong(request.Password))
+            {
+                _logger.LogWarning("Inscription refusée pour {Email} (mot de passe faible)", request.Email);
                 return BadRequest("Le mot de passe doit contenir au moins 8 caractères, dont une majuscule, une minuscule, un chiffre et un caractère spécial.");
+            }
 
             var user = new User
             {
@@ -44,13 +47,15 @@ namespace CyberIncidentManager.API.Controllers
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 FirstName = "Nouvel",
                 LastName = "Utilisateur",
-                RoleId = 3, // Rôle par défaut : Employé
+                RoleId = 3,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Nouvel utilisateur inscrit : {Email}", user.Email);
 
             return Ok("Inscription réussie !");
         }
@@ -147,19 +152,31 @@ namespace CyberIncidentManager.API.Controllers
                 token.IsRevoked = true;
 
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Déconnexion de l'utilisateur {UserId}", userId);
             return Ok("Déconnexion réussie.");
         }
 
         [HttpPost("verify-mfa")]
         public async Task<IActionResult> VerifyMfa([FromBody] MfaRequest dto)
         {
+            var mfaAttemptsKey = $"mfa_attempts_{dto.UserId}";
+            int attempts = _cache.GetOrCreate(mfaAttemptsKey, entry => { entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5); return 0; });
+
+            if (attempts >= 5)
+            {
+                _logger.LogWarning("Trop de tentatives MFA pour l'utilisateur {UserId}", dto.UserId);
+                return StatusCode(429, "Trop de tentatives MFA. Réessayez plus tard.");
+            }
+
             var mfaCode = _cache.Get<string>($"mfa_{dto.UserId}");
             if (mfaCode == null || mfaCode != dto.Code)
             {
+                _cache.Set(mfaAttemptsKey, attempts + 1, TimeSpan.FromMinutes(5));
                 _logger.LogWarning("MFA invalide pour l'utilisateur {UserId}", dto.UserId);
                 return Unauthorized("Code MFA invalide.");
             }
             _cache.Remove($"mfa_{dto.UserId}");
+            _cache.Remove(mfaAttemptsKey);
 
             var user = await _context.Users.FindAsync(dto.UserId);
             var accessToken = _tokenService.GenerateJwtToken(user);

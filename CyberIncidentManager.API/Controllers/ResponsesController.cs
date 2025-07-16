@@ -4,6 +4,7 @@ using CyberIncidentManager.API.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Encodings.Web;
 
 namespace CyberIncidentManager.API.Controllers
 {
@@ -44,8 +45,8 @@ namespace CyberIncidentManager.API.Controllers
             {
                 IncidentId = dto.IncidentId,
                 UserId = dto.UserId,
-                Action = dto.Action,
-                Details = dto.Details,
+                Action = HtmlEncoder.Default.Encode(dto.Action),
+                Details = HtmlEncoder.Default.Encode(dto.Details),
                 Timestamp = DateTime.UtcNow,
                 IsSuccessful = dto.IsSuccessful
             };

@@ -4,6 +4,7 @@ using CyberIncidentManager.API.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Encodings.Web;
 
 namespace CyberIncidentManager.API.Controllers
 {
@@ -44,14 +45,16 @@ namespace CyberIncidentManager.API.Controllers
             {
                 UserId = dto.UserId,
                 IncidentId = dto.IncidentId,
-                Title = dto.Title,
-                Message = dto.Message,
+                Title = HtmlEncoder.Default.Encode(dto.Title),
+                Message = HtmlEncoder.Default.Encode(dto.Message),
                 IsRead = false,
                 CreatedAt = DateTime.UtcNow
             };
 
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
+
+            _logger?.LogInformation("Notification créée pour utilisateur {UserId}", dto.UserId);
 
             return CreatedAtAction(nameof(GetById), new { id = notification.Id }, notification);
         }
@@ -85,6 +88,7 @@ namespace CyberIncidentManager.API.Controllers
             if (notification == null) return NotFound();
             _context.Notifications.Remove(notification);
             await _context.SaveChangesAsync();
+            _logger?.LogWarning("Notification supprimée : {Id}", id);
             return NoContent();
         }
     }
