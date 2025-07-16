@@ -8,9 +8,9 @@ using System.Text.Encodings.Web;
 
 namespace CyberIncidentManager.API.Controllers
 {
-    [Authorize]
+    [Authorize]  // Toute action nécessite un token valide
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/[controller]")]  // Route de base : /api/incidents
     public class IncidentsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -22,7 +22,8 @@ namespace CyberIncidentManager.API.Controllers
             _logger = logger;
         }
 
-        // Lecture : accessible à tous les utilisateurs authentifiés
+        // GET /api/incidents
+        // Retourne tous les incidents, avec leurs relations chargées  
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Incident>>> GetAll() =>
             await _context.Incidents
@@ -32,6 +33,8 @@ namespace CyberIncidentManager.API.Controllers
                 .Include(i => i.AssignedToUser)
                 .ToListAsync();
 
+        // GET /api/incidents/{id}
+        // Recherche un incident par Id, charge ses relations  
         [HttpGet("{id}")]
         public async Task<ActionResult<Incident>> GetById(int id)
         {
@@ -45,31 +48,33 @@ namespace CyberIncidentManager.API.Controllers
             if (incident == null)
             {
                 _logger.LogWarning("Consultation d'incident inexistant : {IncidentId}", id);
-                return NotFound();
+                return NotFound();  // 404 si aucun incident trouvé
             }
 
             _logger.LogInformation("Consultation de l'incident {IncidentId}", id);
-            return Ok(incident);
+            return Ok(incident);   // 200 + payload JSON
         }
 
-        // Création d’incidents : Employé, Analyste, Admin
+        // POST /api/incidents
+        // Création autorisée pour Employé, Analyst ou Admin  
         [Authorize(Roles = "Employé,Analyst,Admin")]
         [HttpPost]
         public async Task<ActionResult<Incident>> Create([FromBody] CreateIncidentDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(ModelState);  // 400 si DTO invalide
 
+            // Construction de l’entité avec encodage XSS-safe
             var incident = new Incident
             {
                 Title = HtmlEncoder.Default.Encode(dto.Title),
                 Description = HtmlEncoder.Default.Encode(dto.Description),
-                Severity = dto.Severity,
-                Status = dto.Status,
+                Severity = dto.Severity,      // À valider/structurer côté serveur
+                Status = dto.Status,        // Idem
                 TypeId = dto.TypeId,
-                AssignedTo = dto.AssignedTo,
+                AssignedTo = dto.AssignedTo,    // À vérifier : correspond à un analyst existant
                 AssetId = dto.AssetId,
-                ReportedBy = dto.ReportedBy,
+                ReportedBy = dto.ReportedBy,    // À extraire plutôt depuis claims JWT
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -77,35 +82,44 @@ namespace CyberIncidentManager.API.Controllers
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Incident créé : {Title} par l'utilisateur {UserId}", incident.Title, dto.ReportedBy);
-
-            return CreatedAtAction(nameof(GetById), new { id = incident.Id }, incident);
+            return CreatedAtAction(nameof(GetById), new { id = incident.Id }, incident);  // 201
         }
 
-        // Modification : Analyste ou Admin
+        // PUT /api/incidents/{id}
+        // Modification autorisée pour Analyst ou Admin  
         [Authorize(Roles = "Analyst,Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, Incident incident)
         {
-            if (id != incident.Id) return BadRequest();
+            if (id != incident.Id)
+                return BadRequest();  // 400 si l’ID d’URL diffère de celui du corps
+
+            // Encodage XSS-safe pour les champs texte
             incident.Title = HtmlEncoder.Default.Encode(incident.Title);
             incident.Description = HtmlEncoder.Default.Encode(incident.Description);
+
             _context.Entry(incident).State = EntityState.Modified;
             await _context.SaveChangesAsync();
+
             _logger.LogInformation("Incident modifié : {IncidentId}", id);
-            return NoContent();
+            return NoContent();  // 204
         }
 
-        // Suppression : Admin uniquement
+        // DELETE /api/incidents/{id}
+        // Suppression réservée aux Admin  
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
             var incident = await _context.Incidents.FindAsync(id);
-            if (incident == null) return NotFound();
+            if (incident == null)
+                return NotFound();  // 404 si inexistant
+
             _context.Incidents.Remove(incident);
             await _context.SaveChangesAsync();
+
             _logger.LogWarning("Incident supprimé : {IncidentId}", id);
-            return NoContent();
+            return NoContent();  // 204
         }
     }
 }
