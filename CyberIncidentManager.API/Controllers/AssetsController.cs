@@ -14,7 +14,13 @@ namespace CyberIncidentManager.API.Controllers
     public class AssetsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        public AssetsController(ApplicationDbContext context) => _context = context;
+        private readonly ILogger<AssetsController> _logger;
+
+        public AssetsController(ApplicationDbContext context, ILogger<AssetsController> logger)
+        {
+            _context = context;
+            _logger = logger;
+        }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Asset>>> GetAll() =>

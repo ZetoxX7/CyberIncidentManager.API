@@ -14,7 +14,13 @@ namespace CyberIncidentManager.API.Controllers
     public class IncidentTypesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        public IncidentTypesController(ApplicationDbContext context) => _context = context;
+        private readonly ILogger<IncidentTypesController> _logger;
+
+        public IncidentTypesController(ApplicationDbContext context, ILogger<IncidentTypesController> logger)
+        {
+            _context = context;
+            _logger = logger;
+        }
 
         // Lecture : tous les utilisateurs connectés
         [HttpGet]

@@ -14,7 +14,13 @@ namespace CyberIncidentManager.API.Controllers
     public class NotificationsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        public NotificationsController(ApplicationDbContext context) => _context = context;
+        private readonly ILogger<NotificationsController> _logger;
+
+        public NotificationsController(ApplicationDbContext context, ILogger<NotificationsController> logger)
+        {
+            _context = context;
+            _logger = logger;
+        }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Notification>>> GetAll() =>

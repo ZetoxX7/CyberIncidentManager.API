@@ -14,7 +14,13 @@ namespace CyberIncidentManager.API.Controllers
     public class RolesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        public RolesController(ApplicationDbContext context) => _context = context;
+        private readonly ILogger<RolesController> _logger;
+
+        public RolesController(ApplicationDbContext context, ILogger<RolesController> logger)
+        {
+            _context = context;
+            _logger = logger;
+        }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Role>>> GetAll() =>
