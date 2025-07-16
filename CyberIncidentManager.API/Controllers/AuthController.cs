@@ -1,7 +1,6 @@
 ﻿using CyberIncidentManager.API.Data;
 using CyberIncidentManager.API.Models;
 using CyberIncidentManager.API.Models.Auth;
-using CyberIncidentManager.API.Models.DTOs;
 using CyberIncidentManager.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

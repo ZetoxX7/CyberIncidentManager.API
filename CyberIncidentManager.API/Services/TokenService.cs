@@ -18,12 +18,12 @@ namespace CyberIncidentManager.API.Services
 
         public string GenerateJwtToken(User user)
         {
-            var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]);
+            var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT key not configured."));
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Name, user.FirstName + " " + user.LastName),
+                new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
                 new Claim(ClaimTypes.Role, user.Role?.Name ?? "User")
             };
 
@@ -48,22 +48,33 @@ namespace CyberIncidentManager.API.Services
 
         public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
         {
+            var key = _configuration["Jwt:Key"];
+            if (string.IsNullOrEmpty(key))
+                throw new SecurityTokenException("JWT key not configured.");
+
             var tokenValidationParameters = new TokenValidationParameters
             {
                 ValidateAudience = true,
                 ValidateIssuer = true,
                 ValidateIssuerSigningKey = true,
-                ValidateLifetime = false, // <-- important ici
+                ValidateLifetime = false, // Permet de valider un token expiré pour le refresh
                 ValidIssuer = _configuration["Jwt:Issuer"],
                 ValidAudience = _configuration["Jwt:Audience"],
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]))
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();
-            var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
-            if (securityToken is not JwtSecurityToken jwtToken) return null;
-
-            return principal;
+            try
+            {
+                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+                if (securityToken is not JwtSecurityToken jwtToken)
+                    return null;
+                return principal;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }

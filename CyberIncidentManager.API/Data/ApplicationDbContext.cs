@@ -28,6 +28,25 @@ namespace CyberIncidentManager.API.Data
                 .WithMany(r => r.Users)
                 .HasForeignKey(u => u.RoleId);
 
+            // Unicité de l'email utilisateur
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
+
+            // Longueur maximale et contraintes User
+            modelBuilder.Entity<User>()
+                .Property(u => u.Email)
+                .HasMaxLength(100)
+                .IsRequired();
+            modelBuilder.Entity<User>()
+                .Property(u => u.FirstName)
+                .HasMaxLength(50)
+                .IsRequired();
+            modelBuilder.Entity<User>()
+                .Property(u => u.LastName)
+                .HasMaxLength(50)
+                .IsRequired();
+
             // INCIDENT → INCIDENT_TYPE (N:1)
             modelBuilder.Entity<Incident>()
                 .HasOne(i => i.Type)
@@ -55,6 +74,46 @@ namespace CyberIncidentManager.API.Data
                 .HasForeignKey(i => i.AssignedTo)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Longueur maximale Incident
+            modelBuilder.Entity<Incident>()
+                .Property(i => i.Title)
+                .HasMaxLength(100)
+                .IsRequired();
+            modelBuilder.Entity<Incident>()
+                .Property(i => i.Description)
+                .HasMaxLength(1000)
+                .IsRequired();
+
+            // INCIDENT_TYPE contraintes
+            modelBuilder.Entity<IncidentType>()
+                .Property(t => t.Name)
+                .HasMaxLength(100)
+                .IsRequired();
+            modelBuilder.Entity<IncidentType>()
+                .Property(t => t.Description)
+                .HasMaxLength(500);
+
+            // ASSET contraintes
+            modelBuilder.Entity<Asset>()
+                .Property(a => a.Name)
+                .HasMaxLength(100)
+                .IsRequired();
+            modelBuilder.Entity<Asset>()
+                .Property(a => a.Type)
+                .HasMaxLength(50)
+                .IsRequired();
+            modelBuilder.Entity<Asset>()
+                .Property(a => a.IpAddress)
+                .HasMaxLength(45)
+                .IsRequired();
+            modelBuilder.Entity<Asset>()
+                .Property(a => a.Owner)
+                .HasMaxLength(100)
+                .IsRequired();
+            modelBuilder.Entity<Asset>()
+                .Property(a => a.Location)
+                .HasMaxLength(100);
+
             // RESPONSE → INCIDENT
             modelBuilder.Entity<Response>()
                 .HasOne(r => r.Incident)
@@ -78,6 +137,31 @@ namespace CyberIncidentManager.API.Data
                 .HasOne(n => n.Incident)
                 .WithMany(i => i.Notifications)
                 .HasForeignKey(n => n.IncidentId);
+
+            // Longueur Notification
+            modelBuilder.Entity<Notification>()
+                .Property(n => n.Title)
+                .HasMaxLength(100)
+                .IsRequired();
+            modelBuilder.Entity<Notification>()
+                .Property(n => n.Message)
+                .HasMaxLength(1000)
+                .IsRequired();
+
+            // ROLE contraintes
+            modelBuilder.Entity<Role>()
+                .Property(r => r.Name)
+                .HasMaxLength(50)
+                .IsRequired();
+            modelBuilder.Entity<Role>()
+                .Property(r => r.Description)
+                .HasMaxLength(200);
+
+            // RefreshToken contraintes
+            modelBuilder.Entity<RefreshToken>()
+                .Property(rt => rt.Token)
+                .HasMaxLength(200)
+                .IsRequired();
         }
     }
 }
