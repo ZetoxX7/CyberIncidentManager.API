@@ -32,11 +32,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateIssuerSigningKey = true,
+            ValidateLifetime = true, // <-- Ajouté ici
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(key)
         };
     });
+
+// CORS Policy (Netlify)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy", policy =>
+        policy.WithOrigins("https://incident-manager.netlify.app")
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+});
 
 // DB
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -52,6 +62,21 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Sécurité : headers HTTP
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Add("X-Frame-Options", "DENY");
+    context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+    await next();
+});
+
+// Middleware de gestion d’erreurs global
+app.UseExceptionHandler("/error");
+
+// CORS
+app.UseCors("CorsPolicy");
 
 // Apply Rate Limiting
 app.UseIpRateLimiting();

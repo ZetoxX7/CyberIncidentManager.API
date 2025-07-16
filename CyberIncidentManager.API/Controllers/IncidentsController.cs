@@ -13,7 +13,13 @@ namespace CyberIncidentManager.API.Controllers
     public class IncidentsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        public IncidentsController(ApplicationDbContext context) => _context = context;
+        private readonly ILogger<IncidentsController> _logger;
+
+        public IncidentsController(ApplicationDbContext context, ILogger<IncidentsController> logger)
+        {
+            _context = context;
+            _logger = logger;
+        }
 
         // Lecture : accessible à tous les utilisateurs authentifiés
         [HttpGet]
@@ -62,6 +68,8 @@ namespace CyberIncidentManager.API.Controllers
             _context.Incidents.Add(incident);
             await _context.SaveChangesAsync();
 
+            _logger.LogInformation("Incident créé : {Title} par l'utilisateur {UserId}", incident.Title, dto.ReportedBy);
+
             return CreatedAtAction(nameof(GetById), new { id = incident.Id }, incident);
         }
 
@@ -85,6 +93,7 @@ namespace CyberIncidentManager.API.Controllers
             if (incident == null) return NotFound();
             _context.Incidents.Remove(incident);
             await _context.SaveChangesAsync();
+            _logger.LogWarning("Incident supprimé : {IncidentId}", id);
             return NoContent();
         }
     }

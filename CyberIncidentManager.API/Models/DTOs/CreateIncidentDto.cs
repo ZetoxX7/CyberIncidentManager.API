@@ -9,6 +9,7 @@ namespace CyberIncidentManager.API.Models.DTOs
         public string Title { get; set; }
 
         [Required]
+        [MaxLength(1000)]
         public string Description { get; set; }
 
         [Required]
