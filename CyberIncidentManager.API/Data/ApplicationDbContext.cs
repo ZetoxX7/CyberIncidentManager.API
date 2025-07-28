@@ -25,142 +25,155 @@ namespace CyberIncidentManager.API.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // 2. Relation User→Role (1:N)
-            modelBuilder.Entity<User>()
-                .HasOne(u => u.Role)
-                .WithMany(r => r.Users)
-                .HasForeignKey(u => u.RoleId);
+            // USERS
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.ToTable("users");
 
-            // 3. Unicité de l’email
-            modelBuilder.Entity<User>()
-                .HasIndex(u => u.Email)
-                .IsUnique();
+                entity.HasKey(u => u.Id);
+                entity.Property(u => u.Id).HasColumnName("id");
+                entity.Property(u => u.Email).HasColumnName("email").HasMaxLength(100).IsRequired();
+                entity.Property(u => u.PasswordHash).HasColumnName("passwordhash");
+                entity.Property(u => u.FirstName).HasColumnName("firstname").HasMaxLength(50).IsRequired();
+                entity.Property(u => u.LastName).HasColumnName("lastname").HasMaxLength(50).IsRequired();
+                entity.Property(u => u.RoleId).HasColumnName("roleid");
+                entity.Property(u => u.CreatedAt).HasColumnName("createdat");
+                entity.Property(u => u.IsActive).HasColumnName("isactive");
 
-            // 4. Contraintes sur User
-            modelBuilder.Entity<User>()
-                .Property(u => u.Email)
-                .HasMaxLength(100)
-                .IsRequired();
-            modelBuilder.Entity<User>()
-                .Property(u => u.FirstName)
-                .HasMaxLength(50)
-                .IsRequired();
-            modelBuilder.Entity<User>()
-                .Property(u => u.LastName)
-                .HasMaxLength(50)
-                .IsRequired();
+                entity.HasIndex(u => u.Email).IsUnique();
+                entity.HasOne(u => u.Role)
+                      .WithMany(r => r.Users)
+                      .HasForeignKey(u => u.RoleId);
+            });
 
-            // 5. Incident → IncidentType (N:1)
-            modelBuilder.Entity<Incident>()
-                .HasOne(i => i.Type)
-                .WithMany()
-                .HasForeignKey(i => i.TypeId);
+            // ROLES
+            modelBuilder.Entity<Role>(entity =>
+            {
+                entity.ToTable("roles");
 
-            // 6. Incident → Asset (N:1 optionnel)
-            modelBuilder.Entity<Incident>()
-                .HasOne(i => i.Asset)
-                .WithMany()
-                .HasForeignKey(i => i.AssetId)
-                .IsRequired(false);
+                entity.Property(r => r.Id).HasColumnName("id");
+                entity.Property(r => r.Name).HasColumnName("name").HasMaxLength(50).IsRequired();
+                entity.Property(r => r.Description).HasColumnName("description").HasMaxLength(200);
+            });
 
-            // 7. Incident → User (ReportedBy), suppression restreinte
-            modelBuilder.Entity<Incident>()
-                .HasOne(i => i.ReportedByUser)
-                .WithMany(u => u.ReportedIncidents)
-                .HasForeignKey(i => i.ReportedBy)
-                .OnDelete(DeleteBehavior.Restrict);
+            // INCIDENTS
+            modelBuilder.Entity<Incident>(entity =>
+            {
+                entity.ToTable("incidents");
 
-            // 8. Incident → User (AssignedTo), suppression restreinte
-            modelBuilder.Entity<Incident>()
-                .HasOne(i => i.AssignedToUser)
-                .WithMany(u => u.AssignedIncidents)
-                .HasForeignKey(i => i.AssignedTo)
-                .OnDelete(DeleteBehavior.Restrict);
+                entity.Property(i => i.Id).HasColumnName("id");
+                entity.Property(i => i.Title).HasColumnName("title").HasMaxLength(100).IsRequired();
+                entity.Property(i => i.Description).HasColumnName("description").HasMaxLength(1000).IsRequired();
+                entity.Property(i => i.Severity).HasColumnName("severity");
+                entity.Property(i => i.Status).HasColumnName("status");
+                entity.Property(i => i.TypeId).HasColumnName("typeid");
+                entity.Property(i => i.ReportedBy).HasColumnName("reportedby");
+                entity.Property(i => i.AssignedTo).HasColumnName("assignedto");
+                entity.Property(i => i.CreatedAt).HasColumnName("createdat");
+                entity.Property(i => i.ResolvedAt).HasColumnName("resolvedat");
+                entity.Property(i => i.AssetId).HasColumnName("assetid");
 
-            // 9. Contraintes sur Incident
-            modelBuilder.Entity<Incident>()
-                .Property(i => i.Title)
-                .HasMaxLength(100)
-                .IsRequired();
-            modelBuilder.Entity<Incident>()
-                .Property(i => i.Description)
-                .HasMaxLength(1000)
-                .IsRequired();
+                entity.HasOne(i => i.Type)
+                      .WithMany()
+                      .HasForeignKey(i => i.TypeId);
 
-            // 10. Contraintes sur IncidentType
-            modelBuilder.Entity<IncidentType>()
-                .Property(t => t.Name)
-                .HasMaxLength(100)
-                .IsRequired();
-            modelBuilder.Entity<IncidentType>()
-                .Property(t => t.Description)
-                .HasMaxLength(500);
+                entity.HasOne(i => i.Asset)
+                      .WithMany()
+                      .HasForeignKey(i => i.AssetId)
+                      .IsRequired(false);
 
-            // 11. Contraintes sur Asset
-            modelBuilder.Entity<Asset>()
-                .Property(a => a.Name)
-                .HasMaxLength(100)
-                .IsRequired();
-            modelBuilder.Entity<Asset>()
-                .Property(a => a.Type)
-                .HasMaxLength(50)
-                .IsRequired();
-            modelBuilder.Entity<Asset>()
-                .Property(a => a.IpAddress)
-                .HasMaxLength(45)
-                .IsRequired();
-            modelBuilder.Entity<Asset>()
-                .Property(a => a.Owner)
-                .HasMaxLength(100)
-                .IsRequired();
-            modelBuilder.Entity<Asset>()
-                .Property(a => a.Location)
-                .HasMaxLength(100);
+                entity.HasOne(i => i.ReportedByUser)
+                      .WithMany(u => u.ReportedIncidents)
+                      .HasForeignKey(i => i.ReportedBy)
+                      .OnDelete(DeleteBehavior.Restrict);
 
-            // 12. Response → Incident et User
-            modelBuilder.Entity<Response>()
-                .HasOne(r => r.Incident)
-                .WithMany(i => i.Responses)
-                .HasForeignKey(r => r.IncidentId);
-            modelBuilder.Entity<Response>()
-                .HasOne(r => r.User)
-                .WithMany(u => u.Responses)
-                .HasForeignKey(r => r.UserId);
+                entity.HasOne(i => i.AssignedToUser)
+                      .WithMany(u => u.AssignedIncidents)
+                      .HasForeignKey(i => i.AssignedTo)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
 
-            // 13. Notification → User et Incident
-            modelBuilder.Entity<Notification>()
-                .HasOne(n => n.User)
-                .WithMany(u => u.Notifications)
-                .HasForeignKey(n => n.UserId);
-            modelBuilder.Entity<Notification>()
-                .HasOne(n => n.Incident)
-                .WithMany(i => i.Notifications)
-                .HasForeignKey(n => n.IncidentId);
+            // INCIDENT TYPES
+            modelBuilder.Entity<IncidentType>(entity =>
+            {
+                entity.ToTable("incidenttypes");
 
-            // 14. Contraintes sur Notification
-            modelBuilder.Entity<Notification>()
-                .Property(n => n.Title)
-                .HasMaxLength(100)
-                .IsRequired();
-            modelBuilder.Entity<Notification>()
-                .Property(n => n.Message)
-                .HasMaxLength(1000)
-                .IsRequired();
+                entity.Property(t => t.Id).HasColumnName("id");
+                entity.Property(t => t.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+                entity.Property(t => t.Description).HasColumnName("description").HasMaxLength(500);
+                entity.Property(t => t.DefaultSeverity).HasColumnName("defaultseverity");
+                entity.Property(t => t.Color).HasColumnName("color");
+            });
 
-            // 15. Contraintes sur Role
-            modelBuilder.Entity<Role>()
-                .Property(r => r.Name)
-                .HasMaxLength(50)
-                .IsRequired();
-            modelBuilder.Entity<Role>()
-                .Property(r => r.Description)
-                .HasMaxLength(200);
+            // ASSETS
+            modelBuilder.Entity<Asset>(entity =>
+            {
+                entity.ToTable("assets");
 
-            // 16. Contraintes sur RefreshToken
-            modelBuilder.Entity<RefreshToken>()
-                .Property(rt => rt.Token)
-                .HasMaxLength(200)
-                .IsRequired();
+                entity.Property(a => a.Id).HasColumnName("id");
+                entity.Property(a => a.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+                entity.Property(a => a.Type).HasColumnName("type").HasMaxLength(50).IsRequired();
+                entity.Property(a => a.IpAddress).HasColumnName("ipaddress").HasMaxLength(45).IsRequired();
+                entity.Property(a => a.Owner).HasColumnName("owner").HasMaxLength(100).IsRequired();
+                entity.Property(a => a.Location).HasColumnName("location").HasMaxLength(100);
+                entity.Property(a => a.Criticality).HasColumnName("criticality");
+            });
+
+            // RESPONSES
+            modelBuilder.Entity<Response>(entity =>
+            {
+                entity.ToTable("responses");
+
+                entity.Property(r => r.Id).HasColumnName("id");
+                entity.Property(r => r.IncidentId).HasColumnName("incidentid");
+                entity.Property(r => r.UserId).HasColumnName("userid");
+                entity.Property(r => r.Action).HasColumnName("action");
+                entity.Property(r => r.Details).HasColumnName("details");
+                entity.Property(r => r.Timestamp).HasColumnName("timestamp");
+                entity.Property(r => r.IsSuccessful).HasColumnName("issuccessful");
+
+                entity.HasOne(r => r.Incident)
+                      .WithMany(i => i.Responses)
+                      .HasForeignKey(r => r.IncidentId);
+
+                entity.HasOne(r => r.User)
+                      .WithMany(u => u.Responses)
+                      .HasForeignKey(r => r.UserId);
+            });
+
+            // NOTIFICATIONS
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.ToTable("notifications");
+
+                entity.Property(n => n.Id).HasColumnName("id");
+                entity.Property(n => n.UserId).HasColumnName("userid");
+                entity.Property(n => n.IncidentId).HasColumnName("incidentid");
+                entity.Property(n => n.Title).HasColumnName("title").HasMaxLength(100).IsRequired();
+                entity.Property(n => n.Message).HasColumnName("message").HasMaxLength(1000).IsRequired();
+                entity.Property(n => n.IsRead).HasColumnName("isread");
+                entity.Property(n => n.CreatedAt).HasColumnName("createdat");
+
+                entity.HasOne(n => n.User)
+                      .WithMany(u => u.Notifications)
+                      .HasForeignKey(n => n.UserId);
+
+                entity.HasOne(n => n.Incident)
+                      .WithMany(i => i.Notifications)
+                      .HasForeignKey(n => n.IncidentId);
+            });
+
+            // REFRESH TOKENS
+            modelBuilder.Entity<RefreshToken>(entity =>
+            {
+                entity.ToTable("refreshtokens");
+
+                entity.Property(rt => rt.Id).HasColumnName("id");
+                entity.Property(rt => rt.UserId).HasColumnName("userid");
+                entity.Property(rt => rt.Token).HasColumnName("token").HasMaxLength(200).IsRequired();
+                entity.Property(rt => rt.ExpiresAt).HasColumnName("expiresat");
+                entity.Property(rt => rt.IsRevoked).HasColumnName("isrevoked");
+            });
         }
     }
 }
