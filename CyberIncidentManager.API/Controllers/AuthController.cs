@@ -79,7 +79,7 @@ namespace CyberIncidentManager.API.Controllers
         // POST api/auth/login
         // Authentification : renvoie JWT ou déclenche MFA pour Admin
         [HttpPost("login")]
-        public async Task<ActionResult<AuthResponse>> Login([FromBody] AuthRequest request)
+        public async Task<ActionResult<AuthResponse>> Login([FromBody] AuthLoginRequest request)
         {
             // Recherche l'utilisateur et vérifie le mot de passe
             var user = await _context.Users
