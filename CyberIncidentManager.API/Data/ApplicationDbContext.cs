@@ -54,6 +54,7 @@ namespace CyberIncidentManager.API.Data
                 entity.Property(r => r.Id).HasColumnName("id");
                 entity.Property(r => r.Name).HasColumnName("name").HasMaxLength(50).IsRequired();
                 entity.Property(r => r.Description).HasColumnName("description").HasMaxLength(200);
+                entity.Property(r => r.Permissions).HasColumnName("permissions");
             });
 
             // INCIDENTS
