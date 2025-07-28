@@ -10,7 +10,7 @@ namespace CyberIncidentManager.API.Controllers
 {
     [Authorize(Roles = "Admin,Analyst")]   // Accès réservé aux rôles Admin et Analyst
     [ApiController]
-    [Route("api/[controller]")]            // Route : api/responses
+    [Route("api/responses")]            // Route : api/responses
     public class ResponsesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;

@@ -10,7 +10,7 @@ using System.Security.Claims;
 namespace CyberIncidentManager.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/auth")]
     public class AuthController : ControllerBase
     {
         private readonly ApplicationDbContext _context;

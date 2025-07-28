@@ -11,7 +11,7 @@ namespace CyberIncidentManager.API.Controllers
     [Authorize(Roles = "Admin,Analyst")]
     // Seuls les Admins et Analysts peuvent accéder à l’ensemble des endpoints
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/assets")]
     // Route de base : /api/assets
     public class AssetsController : ControllerBase
     {

@@ -10,7 +10,7 @@ namespace CyberIncidentManager.API.Controllers
 {
     [Authorize]                                  // Toute requête nécessite un utilisateur authentifié
     [ApiController]
-    [Route("api/[controller]")]                  // Route de base : api/incidenttypes
+    [Route("api/incidenttypes")]                  // Route de base : api/incidenttypes
     public class IncidentTypesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;

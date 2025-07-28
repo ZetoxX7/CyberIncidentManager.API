@@ -4,12 +4,12 @@ using CyberIncidentManager.API.Services;                // Services métiers (je
 using Microsoft.AspNetCore.Authentication.JwtBearer;    // Authentification JWT
 using Microsoft.EntityFrameworkCore;                    // EF Core pour la base PostgreSQL
 using Microsoft.IdentityModel.Tokens;                   // Validation des jetons
-using System.Text;                                       // Encodage des clés
+using System.Text;                                      // Encodage des clés
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Configuration des services de base
-builder.Services.AddControllers();                      // Active les contrôleurs MVC
+builder.Services.AddControllers();                      // Ajoute le support des contrôleurs API
 builder.Services.AddEndpointsApiExplorer();             // Documente les endpoints pour Swagger
 builder.Services.AddSwaggerGen();                       // Génère la documentation OpenAPI
 

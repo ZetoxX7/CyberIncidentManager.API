@@ -10,7 +10,7 @@ namespace CyberIncidentManager.API.Controllers
 {
     [Authorize]  // Toute action nécessite un token valide
     [ApiController]
-    [Route("api/[controller]")]  // Route de base : /api/incidents
+    [Route("api/incidents")]  // Route de base : /api/incidents
     public class IncidentsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;

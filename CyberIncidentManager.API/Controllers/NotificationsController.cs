@@ -10,7 +10,7 @@ namespace CyberIncidentManager.API.Controllers
 {
     [Authorize]                                   // Tout utilisateur authentifié peut accéder
     [ApiController]
-    [Route("api/[controller]")]                   // Route : api/notifications
+    [Route("api/notifications")]                   // Route : api/notifications
     public class NotificationsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
