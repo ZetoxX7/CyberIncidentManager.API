@@ -4,6 +4,7 @@ using CyberIncidentManager.API.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Text.Encodings.Web;
 
 namespace CyberIncidentManager.API.Controllers
@@ -133,6 +134,61 @@ namespace CyberIncidentManager.API.Controllers
                 && password.Any(char.IsLower)
                 && password.Any(char.IsDigit)
                 && password.Any(ch => specialChars.Contains(ch));
+        }
+
+        // Met à jour le profil de l'utilisateur authentifié
+        [HttpPut("update")]
+        [Authorize] // Toute personne authentifiée peut tenter, logique gérée ensuite
+        public async Task<IActionResult> UpdateUser([FromBody] UpdateUserDto dto)
+        {
+            var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+
+            var currentUser = await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == currentUserId);
+
+            if (currentUser == null)
+                return Unauthorized("Utilisateur non authentifié.");
+
+            // Seul l'admin ou le propriétaire du compte peut modifier
+            bool isAdmin = currentUser.Role.Name == "Admin";
+            bool isSelf = currentUser.Id == dto.Id;
+
+            if (!isAdmin && !isSelf)
+                return Forbid("Vous n'avez pas la permission de modifier ce profil.");
+
+            var user = await _context.Users.FindAsync(dto.Id);
+            if (user == null)
+                return NotFound("Utilisateur non trouvé.");
+
+            // Vérifie si email est utilisé par un autre
+            bool emailExists = await _context.Users
+                .AnyAsync(u => u.Email == dto.Email && u.Id != dto.Id);
+            if (emailExists)
+                return BadRequest("Email déjà utilisé par un autre utilisateur.");
+
+            // Si non admin, il ne peut pas changer le rôle
+            if (!isAdmin && user.RoleId != dto.RoleId)
+                return Forbid("Seul un administrateur peut modifier le rôle.");
+
+            // Mise à jour des champs
+            user.Email = dto.Email;
+            user.FirstName = dto.FirstName;
+            user.LastName = dto.LastName;
+
+            if (isAdmin)
+                user.RoleId = dto.RoleId; // Seul un admin peut changer le rôle
+
+            // Si mot de passe fourni
+            if (!string.IsNullOrWhiteSpace(dto.NewPassword))
+            {
+                if (!IsPasswordStrong(dto.NewPassword))
+                    return BadRequest("Mot de passe trop faible.");
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok("Profil mis à jour.");
         }
     }
 }

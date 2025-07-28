@@ -52,14 +52,19 @@ namespace CyberIncidentManager.API.Controllers
                 );
             }
 
-            // Crée l'utilisateur avec rôle par défaut (3) et données minimales
+            // Vérifie si le rôle existe
+            var roleExists = await _context.Roles.AnyAsync(r => r.Id == request.RoleId);
+            if (!roleExists)
+                return BadRequest("Rôle spécifié invalide.");
+
+            // Crée l'utilisateur avec les données complètes
             var user = new User
             {
                 Email = request.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                FirstName = "Nouvel",       // À ajuster ou demander au client
-                LastName = "Utilisateur",
-                RoleId = 3,              // ID du rôle par défaut
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                RoleId = request.RoleId,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };
