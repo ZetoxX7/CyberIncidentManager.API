@@ -15,7 +15,6 @@ builder.Services.AddSwaggerGen();                       // Génère la documenta
 
 // 2. Injection de dépendances pour les services métiers
 builder.Services.AddScoped<TokenService>();             // Service de génération et validation de JWT
-builder.Services.AddScoped<EmailService>();             // Service d’envoi d’e‑mails
 
 // 3. Limitation de débit (Rate Limiting)
 builder.Services.AddMemoryCache();

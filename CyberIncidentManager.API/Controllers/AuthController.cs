@@ -17,20 +17,17 @@ namespace CyberIncidentManager.API.Controllers
         private readonly TokenService _tokenService;
         private readonly IMemoryCache _cache;
         private readonly ILogger<AuthController> _logger;
-        private readonly EmailService _emailService;
 
         public AuthController(
             ApplicationDbContext context,
             TokenService tokenService,
             IMemoryCache cache,
-            ILogger<AuthController> logger,
-            EmailService emailService)
+            ILogger<AuthController> logger)
         {
             _context = context;
             _tokenService = tokenService;
             _cache = cache;
             _logger = logger;
-            _emailService = emailService;
         }
 
         // POST api/auth/register
@@ -93,6 +90,8 @@ namespace CyberIncidentManager.API.Controllers
             _logger.LogInformation("Connexion réussie pour {Email}", request.Email);
 
             // Si rôle Admin, exige verification MFA
+            // Supprimer ce bloc :
+            /*
             if (user.Role.Name == "Admin")
             {
                 var mfaCode = new Random().Next(100000, 999999).ToString();
@@ -101,6 +100,7 @@ namespace CyberIncidentManager.API.Controllers
                 _logger.LogInformation("MFA envoyé à {Email}", user.Email);
                 return Ok("MFA_REQUIRED");
             }
+            */
 
             // Génère et stocke tokens pour les autres rôles
             var accessToken = _tokenService.GenerateJwtToken(user);
@@ -180,60 +180,6 @@ namespace CyberIncidentManager.API.Controllers
             await _context.SaveChangesAsync();
             _logger.LogInformation("Déconnexion de l'utilisateur {UserId}", userId);
             return Ok("Déconnexion réussie.");
-        }
-
-        // POST api/auth/verify-mfa
-        // Valide le code MFA envoyé par email, puis génère les tokens
-        [HttpPost("verify-mfa")]
-        public async Task<IActionResult> VerifyMfa([FromBody] MfaRequest dto)
-        {
-            var attemptsKey = $"mfa_attempts_{dto.UserId}";
-            int attempts = _cache.GetOrCreate(attemptsKey, e =>
-            {
-                e.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
-                return 0;
-            });
-
-            if (attempts >= 5)
-            {
-                _logger.LogWarning("Trop de tentatives MFA pour l'utilisateur {UserId}", dto.UserId);
-                return StatusCode(429, "Trop de tentatives MFA. Réessayez plus tard.");
-            }
-
-            var mfaCode = _cache.Get<string>($"mfa_{dto.UserId}");
-            if (mfaCode == null || mfaCode != dto.Code)
-            {
-                _cache.Set(attemptsKey, attempts + 1, TimeSpan.FromMinutes(5));
-                _logger.LogWarning("MFA invalide pour l'utilisateur {UserId}", dto.UserId);
-                return Unauthorized("Code MFA invalide.");
-            }
-
-            // MFA validé : supprime le code et les compteurs
-            _cache.Remove($"mfa_{dto.UserId}");
-            _cache.Remove(attemptsKey);
-
-            var user = await _context.Users.FindAsync(dto.UserId);
-            var accessToken = _tokenService.GenerateJwtToken(user);
-            var refreshToken = _tokenService.GenerateRefreshToken();
-
-            var rt = new RefreshToken
-            {
-                UserId = user.Id,
-                Token = refreshToken,
-                ExpiresAt = DateTime.UtcNow.AddDays(7),
-                IsRevoked = false
-            };
-
-            _context.RefreshTokens.Add(rt);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("MFA validé pour l'utilisateur {UserId}", dto.UserId);
-            return Ok(new AuthResponse
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken,
-                Expiration = DateTime.UtcNow.AddMinutes(30)
-            });
         }
 
         // Vérifie la robustesse du mot de passe
